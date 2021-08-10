@@ -1,37 +1,38 @@
 package org.example;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.LongAdder;
 
-public class Store implements Callable<Integer> {
-    public static int numberOfItemsSold = 3;
+public class Store implements Runnable {
+    public static final int numberOfItemsSold = 8;
     private static Random random = new Random();
 
-    protected String nameStore;
-    protected AtomicIntegerArray storeRevenue;
+    private LongAdder tax;
+    private String nameStore;
+    private List<Integer> storeRevenue;
 
 
-
-    public Store(String nameStore){
+    public Store(String nameStore, LongAdder tax){
         this.nameStore = nameStore;
-        this.storeRevenue = new AtomicIntegerArray(numberOfItemsSold);
+        this.storeRevenue = new ArrayList<>(numberOfItemsSold);
+        this.tax = tax;
 
     }
 
     public void createStoreRevenue(){
         for (int i = 0; i < numberOfItemsSold; i++) {
-            storeRevenue.lazySet(i, random.nextInt(50));
+            storeRevenue.add(i, random.nextInt(App.MAX_CHECK));
         }
+        System.out.println(nameStore  + " -  дневная выручка:" + storeRevenue);
     }
 
-    @Override
-    public Integer call() throws Exception {
-        int taxSum = 0;
-        for(int i = 0; i < numberOfItemsSold; i++)
-            taxSum += storeRevenue.get(i);
 
-        return taxSum;
+    @Override
+    public void run() {
+        for (Integer i : storeRevenue){
+            tax.add(i);
+        }
     }
 }

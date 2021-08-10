@@ -1,58 +1,57 @@
 package org.example;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Random;import java.util.concurrent.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.LongAdder;
 
 
 public class App {
-    public static void main(String[] args) {
-        Store store1 = new Store("Магазин 1");
-        Store store3 = new Store("Магазин 3");
-        Store store2 = new Store("Магазин 2");
+    public static final int NUMBER_OF_ITEMS_SOLD  = 5; // Количество покупок в магазине за 1 день
+    public static final int MAX_CHECK = 1000; //Максимальная стоимость одной покупки
 
-        ExecutorService es = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    public static void main(String[] args) {
+
         LongAdder tax = new LongAdder();
+        ExecutorService es = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+
+        List<Store> myStores = new ArrayList<>();
+        myStores.add(new Store("Магазин 1", tax));
+        myStores.add(new Store("Магазин 2", tax));
+        myStores.add(new Store("Магазин 3", tax));
+        myStores.add(new Store("Магазин 4", tax));
+
 
         List<Thread> createStoreRevenueThread = new ArrayList<>();
-        createStoreRevenueThread.add(new Thread(null, store1::createStoreRevenue, "Store1_StoreRevenue"));
-        createStoreRevenueThread.add(new Thread(null, store2::createStoreRevenue, "Store2_StoreRevenue"));
-        createStoreRevenueThread.add(new Thread(null, store3::createStoreRevenue, "Store3_StoreRevenue"));
+        for (Store store : myStores) {
+            createStoreRevenueThread.add(new Thread(null, store::createStoreRevenue));
+        }
 
         createStoreRevenueThread.stream()
                 .forEach(Thread::start);
-        System.out.println(store1.storeRevenue);
-        System.out.println(store3.storeRevenue);
-        System.out.println(store2.storeRevenue);
 
+        for (Thread thread:createStoreRevenueThread){
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
 
-        List<Callable<Integer>> myCallableList = new ArrayList<>();
-        myCallableList.add(store1::call);
-        myCallableList.add(store2::call);
-        myCallableList.add(store3::call);
+        for (Store store : myStores) {
+            es.submit(store);
+        }
 
-        /*myCallableList.stream()
-                .forEach(task -> es.submit(tax.add((long)task))); //не пойму как передать Integer? */
+        try {
+            es.awaitTermination(2, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        es.shutdown();
 
-        
-
-
-        List<Integer> totalTaxList =
-
-
-
-
-
-
-
-
-
-
+        System.out.printf("Общая выручка %d магазинов равна - %d", myStores.size(), tax.sum());
 
     }
-
 }
 
 
